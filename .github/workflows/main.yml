@@ -1,0 +1,59 @@
+name: Code Style Check
+
+on:
+  pull_request:
+    branches:
+      - main
+      - develop
+
+jobs:
+  code-style:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+      issues: write
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+      
+      - name: Set up JDK
+        uses: actions/setup-java@v5
+        with:
+          java-version: '25'
+          distribution: 'temurin'
+          cache: 'maven'
+      
+      - name: Check code formatting
+        run: mvn com.spotify.fmt:fmt-maven-plugin:check
+        
+      - name: Comment on failure
+        if: failure() && github.event_name == 'pull_request'
+        uses: actions/github-script@v8
+        with:
+          script: |
+            const message = `## ❌ Code Style Check Failed
+            
+            Your code is not compliant with the project's code style.
+            
+            ### To fix this:
+            1. Run the following command locally:
+               \`\`\`bash
+               mvn com.spotify.fmt:fmt-maven-plugin:format
+               \`\`\`
+            2. Commit the changes:
+               \`\`\`bash
+               git add .
+               git commit -m "Apply code formatting"
+               git push
+               \`\`\`
+            
+            The PR will be ready to merge once the code style check passes. ✅`;
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: message
+            });
