@@ -1,0 +1,5 @@
+FROM maven:3.9-amazoncorretto-25
+
+EXPOSE 8080
+
+ENV JAVA_OPTS_APPEND="-Dquarkus.http.host=0.0.0.0 -Djava.util.logging.manager=org.jboss.logmanager.LogManager"

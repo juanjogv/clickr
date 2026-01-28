@@ -16,6 +16,8 @@
         <quarkus.platform.version>3.30.8</quarkus.platform.version>
         <skipITs>true</skipITs>
         <surefire-plugin.version>3.5.4</surefire-plugin.version>
+
+        <flyway.cleanDisabled>false</flyway.cleanDisabled>
     </properties>
 
     <dependencyManagement>
@@ -72,6 +74,16 @@
             <artifactId>quarkus-rest-client-jackson</artifactId>
         </dependency>
         <dependency>
+            <groupId>com.google.guava</groupId>
+            <artifactId>guava</artifactId>
+            <version>33.5.0-jre</version>
+        </dependency>
+        <dependency>
+            <groupId>io.github.ag-libs.validcheck</groupId>
+            <artifactId>validcheck</artifactId>
+            <version>0.10.0</version>
+        </dependency>
+        <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-junit5</artifactId>
             <scope>test</scope>
@@ -85,6 +97,34 @@
 
     <build>
         <plugins>
+            <plugin>
+                <groupId>org.flywaydb</groupId>
+                <artifactId>flyway-maven-plugin</artifactId>
+                <version>11.20.3</version>
+                <dependencies>
+                    <dependency>
+                        <groupId>org.flywaydb</groupId>
+                        <artifactId>flyway-database-postgresql</artifactId>
+                        <version>11.20.3</version>
+                    </dependency>
+                    <dependency>
+                        <groupId>org.postgresql</groupId>
+                        <artifactId>postgresql</artifactId>
+                        <version>42.7.9</version>
+                    </dependency>
+                </dependencies>
+                <configuration>
+                    <url>jdbc:postgresql://clickr-postgres:5432/clickrdb</url>
+                    <user>clickr</user>
+                    <password>clickr</password>
+                    <schemas>
+                        <schema>core</schema>
+                    </schemas>
+                    <locations>
+                        <location>filesystem:src/main/resources/db/migration</location>
+                    </locations>
+                </configuration>
+            </plugin>
             <plugin>
                 <groupId>com.spotify.fmt</groupId>
                 <artifactId>fmt-maven-plugin</artifactId>
