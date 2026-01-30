@@ -4,6 +4,7 @@ import io.clickr.domain.Url;
 import io.smallrye.mutiny.Uni;
 import io.vertx.mutiny.sqlclient.Pool;
 import io.vertx.mutiny.sqlclient.RowSet;
+import io.vertx.mutiny.sqlclient.SqlResult;
 import io.vertx.mutiny.sqlclient.Tuple;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -20,6 +21,13 @@ public class UrlRepository {
     this.client = client;
   }
 
+  private static final String CREATE_QUERY =
+      """
+          INSERT INTO urls (short_code, original_url, clicks, created_at)
+          VALUES ($1, $2, 0, NOW())
+          RETURNING id, short_code, original_url, clicks, created_at, last_clicked_at
+          """;
+
   /**
    * Creates a new URL entry in the database.
    *
@@ -29,14 +37,18 @@ public class UrlRepository {
    */
   public Uni<Url> create(String originalUrl, String shortCode) {
     return client
-        .preparedQuery(
-            "INSERT INTO urls (short_code, original_url, clicks, created_at) "
-                + "VALUES ($1, $2, 0, NOW()) "
-                + "RETURNING id, short_code, original_url, clicks, created_at, last_clicked_at")
+        .preparedQuery(CREATE_QUERY)
         .execute(Tuple.of(shortCode, originalUrl))
         .map(RowSet::iterator)
         .map(iterator -> iterator.hasNext() ? Url.from(iterator.next()) : null);
   }
+
+  private static final String FIND_BY_SHORT_CODE_QUERY =
+      """
+          SELECT id, short_code, original_url, clicks, created_at, last_clicked_at
+          FROM urls
+          WHERE short_code = $1
+          """;
 
   /**
    * Finds a URL by its short code.
@@ -46,15 +58,18 @@ public class UrlRepository {
    */
   public Uni<Optional<Url>> findByShortCode(String shortCode) {
     return client
-        .preparedQuery(
-            "SELECT id, short_code, original_url, clicks, created_at, last_clicked_at "
-                + "FROM urls WHERE short_code = $1")
+        .preparedQuery(FIND_BY_SHORT_CODE_QUERY)
         .execute(Tuple.of(shortCode))
         .map(RowSet::iterator)
         .map(
             iterator ->
                 iterator.hasNext() ? Optional.of(Url.from(iterator.next())) : Optional.empty());
   }
+
+  private static final String EXISTS_BY_SHORT_CODE_QUERY =
+      """
+          SELECT EXISTS(SELECT 1 FROM urls WHERE short_code = $1)
+          """;
 
   /**
    * Checks if a short code already exists.
@@ -64,11 +79,16 @@ public class UrlRepository {
    */
   public Uni<Boolean> existsByShortCode(String shortCode) {
     return client
-        .preparedQuery("SELECT EXISTS(SELECT 1 FROM urls WHERE short_code = $1)")
+        .preparedQuery(EXISTS_BY_SHORT_CODE_QUERY)
         .execute(Tuple.of(shortCode))
         .map(RowSet::iterator)
         .map(iterator -> iterator.hasNext() && iterator.next().getBoolean(0));
   }
+
+  private static final String NEXTVAL_QUERY =
+      """
+        SELECT nextval('urls_id_seq')
+        """;
 
   /**
    * Gets the next sequence value for generating IDs.
@@ -77,11 +97,16 @@ public class UrlRepository {
    */
   public Uni<Long> getNextSequenceValue() {
     return client
-        .query("SELECT nextval('urls_id_seq')")
+        .query(NEXTVAL_QUERY)
         .execute()
         .map(RowSet::iterator)
         .map(iterator -> iterator.hasNext() ? iterator.next().getLong(0) : null);
   }
+
+  private static final String DELETE_BY_SHORT_CODE_QUERY =
+      """
+          DELETE FROM urls WHERE short_code = $1
+          """;
 
   /**
    * Deletes a URL by its short code.
@@ -91,8 +116,8 @@ public class UrlRepository {
    */
   public Uni<Integer> deleteByShortCode(String shortCode) {
     return client
-        .preparedQuery("DELETE FROM urls WHERE short_code = $1")
+        .preparedQuery(DELETE_BY_SHORT_CODE_QUERY)
         .execute(Tuple.of(shortCode))
-        .map(rowSet -> rowSet.rowCount());
+        .map(SqlResult::rowCount);
   }
 }
