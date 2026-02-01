@@ -121,6 +121,28 @@ public class UrlService {
   }
 
   /**
+   * Increments the click counter for a URL by its short code.
+   *
+   * @param shortCode the short code of the URL
+   * @return Uni that completes when the increment operation finishes
+   */
+  public Uni<Void> incrementClicks(String shortCode) {
+    log.info("Incrementing clicks for short code: {}", shortCode);
+    return urlRepository.incrementClickByShortCode(shortCode);
+  }
+
+  /**
+   * Finds the original URL by its short code
+   *
+   * @param shortCode the short code to search for
+   * @return Uni with Optional containing the original URL, or empty if not found
+   */
+  public Uni<Optional<String>> findOriginalUrlByShortCode(String shortCode) {
+    log.info("Finding original URL for short code: {}", shortCode);
+    return urlRepository.findOriginalUrlByShortCode(shortCode);
+  }
+
+  /**
    * Additional URL validation to prevent SSRF and malicious URLs.
    *
    * @param url the URL to validate

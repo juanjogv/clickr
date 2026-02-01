@@ -1,0 +1,4 @@
+@shortCode =
+
+###
+GET http://localhost:8080/{{shortCode}}

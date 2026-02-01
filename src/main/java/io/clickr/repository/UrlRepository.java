@@ -120,4 +120,48 @@ public class UrlRepository {
         .execute(Tuple.of(shortCode))
         .map(SqlResult::rowCount);
   }
+
+  private static final String INCREMENT_CLICKS_BY_SHORT_CODE_QUERY =
+      """
+          UPDATE urls
+          SET clicks = clicks + 1,
+              last_clicked_at = NOW()
+          WHERE short_code = $1
+          """;
+
+  /**
+   * Increments the click counter and updates the last_clicked_at timestamp atomically.
+   *
+   * @param shortCode the short code of the URL to increment
+   * @return Uni that completes when the update finishes (does not return the updated row)
+   */
+  public Uni<Void> incrementClickByShortCode(String shortCode) {
+    return client
+        .preparedQuery(INCREMENT_CLICKS_BY_SHORT_CODE_QUERY)
+        .execute(Tuple.of(shortCode))
+        .replaceWithVoid();
+  }
+
+  private static final String FIND_ORIGINAL_URL_BY_SHORT_CODE_QUERY =
+      """
+          SELECT original_url
+          FROM urls
+          WHERE short_code = $1
+          """;
+
+  /**
+   * Retrieves only the original URL by its short code.
+   *
+   * @param shortCode the short code to search for
+   * @return Uni with Optional containing the original URL string, or empty if not found
+   */
+  public Uni<Optional<String>> findOriginalUrlByShortCode(String shortCode) {
+    return client
+        .preparedQuery(FIND_ORIGINAL_URL_BY_SHORT_CODE_QUERY)
+        .execute(Tuple.of(shortCode))
+        .map(RowSet::iterator)
+        .map(
+            iterator ->
+                iterator.hasNext() ? Optional.of(iterator.next().getString(0)) : Optional.empty());
+  }
 }
