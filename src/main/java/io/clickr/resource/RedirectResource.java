@@ -34,7 +34,7 @@ public class RedirectResource {
 
   @GET
   @Path("/{shortCode}")
-  @Produces(MediaType.TEXT_HTML)
+  @Produces(value = {MediaType.TEXT_HTML, MediaType.APPLICATION_JSON})
   @Operation(
       summary = "Redirect to original URL",
       description =
@@ -52,17 +52,17 @@ public class RedirectResource {
             content =
                 @Content(
                     mediaType = MediaType.APPLICATION_JSON,
-                    schema = @Schema(implementation = String.class))),
+                    schema = @Schema(implementation = Object.class))),
         @APIResponse(
             responseCode = "404",
             description = "Short code not found",
             content =
                 @Content(
                     mediaType = MediaType.APPLICATION_JSON,
-                    schema = @Schema(implementation = String.class))),
+                    schema = @Schema(implementation = Object.class))),
       })
   public Uni<RestResponse<Void>> redirect(@PathParam("shortCode") String shortCode) {
-    log.trace("GET /{} - Redirecting short code", shortCode);
+    log.info("GET /{} - Redirecting short code", shortCode);
     return redirectService.redirect(shortCode);
   }
 }
